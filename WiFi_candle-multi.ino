@@ -46,13 +46,7 @@ void setup(void){
   SPIFFS.begin();
   WiFi.config(ip, dns, gateway, subnet);
   WiFi.begin(ssid, password);
-  Serial.println("");
-/*
-  // Wait for connection
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-  }
-  */
+  
   server.on("/", handleRoot);
   
   server.on("/on", [](){
