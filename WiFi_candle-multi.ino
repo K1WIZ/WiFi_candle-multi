@@ -1,3 +1,14 @@
+/*
+ * This is a simple flickering candle that can be controlled by WiFi.  With SPIFFS 
+ * support, it is possible for the candle to remember its state (on or off) if power is 
+ * cycled.
+ * 
+ * Written by: John Rogers
+ * Date: 9/11/17
+ * 
+ * License: GPL v3
+ */
+
 #include <ESP8266TrueRandom.h>
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
@@ -65,7 +76,6 @@ void setup(void){
   
   server.on("/off", [](){
   server.send(200, "text/plain", "Okay -- Candle is off!");
-  //digitalWrite(fPin, 0);
   state = 0;
   File f = SPIFFS.open("/state.txt", "w"); 
 
