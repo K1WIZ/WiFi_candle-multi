@@ -60,6 +60,13 @@ void setup(void){
   //WiFi.config(ip, dns, gateway, subnet);  // This section if you want hard-coded IP
   WiFi.begin(ssid, password);
   EEPROM.begin(8);
+
+  // Wait for connection
+  while (WiFi.status() != WL_CONNECTED) {
+    //delay(500);
+    //Serial.print(".");
+    idle();
+  }
   
   server.on("/", handleRoot);
   
@@ -97,9 +104,7 @@ void showstate(){
   }
 }
 
- 
-void loop(void){
-showstate();
+void idle(){
   lastState = EEPROM.read(0);
   
   if (lastState == 1) {
@@ -108,6 +113,11 @@ showstate();
     analogWrite(fPin, 0);
     analogWrite(fPin2, 0);
     }
+}
+ 
+void loop(void){
+  showstate();
+  idle();
   server.handleClient();
 }
  
