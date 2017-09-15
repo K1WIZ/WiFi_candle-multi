@@ -1,5 +1,5 @@
 /*
- * This is a simple flickering candle that can be controlled by WiFi.  With SPIFFS 
+ * This is a simple flickering candle that can be controlled by WiFi.  With EEPROM 
  * support, it is possible for the candle to remember its state (on or off) if power is 
  * cycled.
  * 
@@ -14,26 +14,28 @@
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
-#include <FS.h>
-
+#include <EEPROM.h>
+/*
 IPAddress ip(10, 2, 50, 100);
 IPAddress dns(10, 0, 1, 10);
 IPAddress gateway(10, 2, 50, 1);
 IPAddress subnet(255, 255, 255, 0);
-
+*/
 const char* ssid = "SSID";
 const char* password = "P@ssw0rd";
 MDNSResponder mdns;
 ESP8266WebServer server(80);
 
+int state;
+int lastState;
+String response;  // we build the string that creates the web UI based on selection
+
 void handleRoot() {
-  server.send(200, "text/html", "<h1>Wireless Candle</h1><p><a href=\"on\"><button>ON</button></a>&nbsp;<a href=\"off\"><button>OFF</button></a></p>");
+  server.send(200, "text/html", response);
 }
 
 #define fPin 12
 #define fPin2 13
-
-int state = 0;
 
 void handleNotFound(){
   String message = "File Not Found\n\n";
@@ -54,37 +56,23 @@ void setup(void){
   pinMode(fPin, OUTPUT);
   pinMode(fPin2, OUTPUT);
   Serial.begin(115200);
-  SPIFFS.begin();
-  WiFi.config(ip, dns, gateway, subnet);
+  WiFi.mode(WIFI_STA);
+  //WiFi.config(ip, dns, gateway, subnet);  // This section if you want hard-coded IP
   WiFi.begin(ssid, password);
+  EEPROM.begin(8);
   
   server.on("/", handleRoot);
   
   server.on("/on", [](){
-  server.send(200, "text/plain", "Okay -- Candle is lit!");
+  server.send(200, "text/html", response);
   state = 1;
-  File f = SPIFFS.open("/state.txt", "w"); 
-
-    if (!f) {
-      Serial.println("file open failed on update.");
-    } else {
-      f.println(state); 
-      f.close();
-    }
-  
+  setting();
   });
   
   server.on("/off", [](){
-  server.send(200, "text/plain", "Okay -- Candle is off!");
+  server.send(200, "text/html", response);
   state = 0;
-  File f = SPIFFS.open("/state.txt", "w"); 
-
-    if (!f) {
-      Serial.println("file open failed on update.");
-    } else {
-      f.println(state); 
-      f.close();
-    }
+  setting();
   });
 
   server.onNotFound(handleNotFound);
@@ -92,32 +80,34 @@ void setup(void){
   server.begin();
   Serial.println("HTTP server started");
 }
+
+
+void setting(){
+  if( EEPROM.read(0) != state ){
+    EEPROM.write(0, state);
+    EEPROM.commit();
+  }
+}
+
+void showstate(){
+  if( EEPROM.read(0) == 1 ){
+    response = "<h1>Wireless Candle</h1><p><a href=\"on\"><button>ON</button></a>&nbsp;<a href=\"off\"><button>OFF</button></a><br><br>CANDLE IS ON</p>";
+  } else if ( EEPROM.read(0) == 0 ){
+    response = "<h1>Wireless Candle</h1><p><a href=\"on\"><button>ON</button></a>&nbsp;<a href=\"off\"><button>OFF</button></a><br><br>CANDLE IS OFF</p>";;
+  }
+}
+
  
 void loop(void){
-
-  File f = SPIFFS.open("/state.txt", "r");
-  if (!f) {
-      Serial.println("File open failed on read.");
-    } else {
-      while(f.available()) {
-        //Lets read line by line from the file
-        String line = f.readStringUntil('\n');
-        state = line.toInt();
-        break; //if left in, we'll just read the first line then break out of the while.
-      } 
-      f.close();
-    }
-
+showstate();
+  lastState = EEPROM.read(0);
   
-  if (state == 1) {
+  if (lastState == 1) {
   candle();
-  }
-  else {
-    if (state == 0) {
+  } else if (lastState == 0) {
     analogWrite(fPin, 0);
     analogWrite(fPin2, 0);
     }
-  }
   server.handleClient();
 }
  

@@ -2,7 +2,7 @@
 WiFi Flickering Candle using two LEDs
 
 This version flickers two PWM channels on an ESP8266 type MCU.  
-IP address is hardcoded to allow for assignment and contact
+IP address is DHCP but can be hardcoded to allow for assignment and contact
 from a home automation controller.  Use IP that is valid in
 your network.
 
